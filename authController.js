@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const pool = require('./db'); // MySQL connection pool
 
@@ -31,6 +32,10 @@ exports.signup = async (req, res) => {
     await pool.execute('INSERT INTO users (username, email, password, roles, verified) VALUES (?, ?, ?, ?, ?)', [
       username, email, hashedPassword, roles, 1,
     ]);
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not defined');
+    }
+    
 
     // Generate email verification token
     const verificationToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1h' });
@@ -99,17 +104,22 @@ exports.login = async (req, res) => {
 
 // Wishlist handlers
 // GET - Retrieve all wishlist items for a user
+// GET - Retrieve all wishlist items for a user
 exports.getWishlist = async (req, res) => {
   try {
-    const user_id = req.body.user_id; // Assuming user_id is passed in the request body
-    const [rows] = await pool.execute('SELECT * FROM wishlist WHERE user_id = ?', [user_id]);
-    return res.send(rows);
+      const { user_id } = req.body;  // Get user_id from the request body
+      if (!user_id) {
+          return res.status(400).json({ message: 'User ID is required' });
+      }
+      const [rows] = await pool.execute('SELECT * FROM wishlist WHERE user_id = ?', [user_id]);
+      return res.json(rows);
   } catch (error) {
-    return res.status(500).send({
-      message: error.message,
-      location: 'authController.js',
-      method: 'getWishlist',
-    });
+      console.error(error);
+      return res.status(500).send({
+          message: error.message,
+          location: 'authController.js',
+          method: 'getWishlist',
+      });
   }
 };
 
