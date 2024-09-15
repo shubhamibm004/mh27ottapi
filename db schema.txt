@@ -1,0 +1,106 @@
+db name login_db
+
+users 
+id	int	NO	PRI		auto_increment
+username	varchar(255)	NO	UNI		
+password	varchar(255)	NO			
+roles	varchar(255)	NO		User	
+email	varchar(255)	YES	UNI		
+verified	tinyint(1)	YES		0	
+is_admin	tinyint(1)	YES		0	
+created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+updated_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED on update CURRENT_TIMESTAMP
+
+movies 
+id	int	NO	PRI		auto_increment
+title	varchar(255)	NO			
+imageUrl	text	NO			
+overview	text	YES			
+
+wishlist
+id	int	NO	PRI		auto_increment
+user_id	int	NO	MUL		
+movie_id	int	NO	MUL		
+imageUrl	text	YES			
+title	varchar(255)	YES			
+overview	text	YES			
+
+
+setup.sql
+sql
+-- Create the database
+CREATE DATABASE IF NOT EXISTS login_db;
+USE login_db;
+
+-- Create the `users` table
+CREATE TABLE IF NOT EXISTS users (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  roles VARCHAR(255) NOT NULL DEFAULT 'User',
+  email VARCHAR(255) DEFAULT NULL UNIQUE,
+  verified TINYINT(1) DEFAULT 0,
+  is_admin TINYINT(1) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Create the `movies` table
+CREATE TABLE IF NOT EXISTS movies (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  imageUrl TEXT NOT NULL,
+  overview TEXT DEFAULT NULL
+);
+
+-- Create the `wishlist` table
+CREATE TABLE IF NOT EXISTS wishlist (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  movie_id INT NOT NULL,
+  imageUrl TEXT DEFAULT NULL,
+  title VARCHAR(255) DEFAULT NULL,
+  overview TEXT DEFAULT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE
+);
+Explanation:
+Database Creation:
+
+CREATE DATABASE IF NOT EXISTS login_db;: Creates the database if it doesn't already exist.
+USE login_db;: Switches to the login_db database.
+users Table:
+
+id: Primary key, auto-incrementing integer.
+username: Unique, not null, varchar field for the username.
+password: Not null, varchar field for the password.
+roles: Default value of 'User', varchar field for user roles.
+email: Nullable, unique varchar field for the email address.
+verified: Nullable, tinyint field indicating whether the email is verified (default 0).
+is_admin: Nullable, tinyint field indicating if the user is an admin (default 0).
+created_at: Timestamp field that defaults to the current timestamp when the row is created.
+updated_at: Timestamp field that defaults to the current timestamp and updates to the current timestamp on row update.
+movies Table:
+
+id: Primary key, auto-incrementing integer.
+title: Not null, varchar field for the movie title.
+imageUrl: Not null, text field for the movie image URL.
+overview: Nullable text field for the movie overview.
+wishlist Table:
+
+id: Primary key, auto-incrementing integer.
+user_id: Foreign key referencing the users table, not null.
+movie_id: Foreign key referencing the movies table, not null.
+imageUrl: Nullable text field for the movie image URL.
+title: Nullable varchar field for the movie title.
+overview: Nullable text field for the movie overview.
+FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE: Ensures that if a user is deleted, all related wishlist entries are also deleted.
+FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE: Ensures that if a movie is deleted, all related wishlist entries are also deleted.
+How to Use
+Save this SQL code to a file named setup.sql.
+
+Run the SQL file using your MySQL command line or a database management tool:
+
+bash
+mysql -u yourusername -p < setup.sql
+Replace yourusername with your MySQL username. You will be prompted to enter your MySQL password.

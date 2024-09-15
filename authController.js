@@ -52,7 +52,7 @@ exports.addUser = [
 
       // Insert new user with roles
       await pool.execute('INSERT INTO users (username, email, password, roles, verified, is_admin) VALUES (?, ?, ?, ?, ?, ?)', [
-        username, email, hashedPassword, roles, 0, roles === 'Admin'
+        username, email, hashedPassword, roles, 0, roles === 'Admin' ? 1 : 0
       ]);
 
       res.status(201).json({ message: 'User added successfully' });
@@ -157,19 +157,20 @@ exports.signup = [
 
       // Insert new user with roles
       await pool.execute('INSERT INTO users (username, email, password, roles, verified, is_admin) VALUES (?, ?, ?, ?, ?, ?)', [
-        username, email, hashedPassword, roles, 0, roles === 'Admin'
+        username, email, hashedPassword, roles, 0, roles === 'Admin' ? 1 : 0
       ]);
 
       // Generate email verification token
       const verificationToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
       // Send email verification
+      const frontendVerificationLink = `http://localhost:3000/emailverified?token=${verificationToken}`;
       const verificationLink = `http://localhost:5000/api/verify-email?token=${verificationToken}`;
       await transporter.sendMail({
         from: process.env.EMAIL,
         to: email,
         subject: 'Email Verification',
-        html: `Click <a href="${verificationLink}">here</a> to verify your email.`,
+        html:  `Click <a href="${frontendVerificationLink}">here</a> to verify your email.`,
       });
 
       res.status(200).json({ message: 'User registered. Please verify your email.' });
@@ -235,7 +236,8 @@ exports.verifyEmail = async (req, res) => {
   try {
     const { email } = jwt.verify(token, process.env.JWT_SECRET);
     await pool.execute('UPDATE users SET verified = 1 WHERE email = ?', [email]);
-    res.status(200).json({ message: 'Email verified successfully' });
+    const frontendVerificationLink = `http://localhost:3000/emailverified?token=${token}`;
+    res.status(200).json({ message: 'Email verified successfully', redirect: frontendVerificationLink });
   } catch (error) {
     console.error(error);
     res.status(400).json({ message: 'Invalid or expired token' });
