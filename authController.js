@@ -79,9 +79,10 @@ exports.removeUser = async (req, res) => {
 };
 
 // Get all movies (Admin only)
+// Get all movies (Admin only)
 exports.getAllMovies = async (req, res) => {
   try {
-    const [movies] = await pool.execute('SELECT id, title, imageUrl, overview FROM movies');
+    const [movies] = await pool.execute('SELECT id, title, poster_path AS imageUrl, overview, release_date, language, popularity, vote_average FROM movies');
     res.status(200).json(movies);
   } catch (error) {
     console.error(error);
@@ -100,7 +101,18 @@ exports.addMovie = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
+// Add a new movie (Admin only)
+exports.addMovie = async (req, res) => {
+  const { title, poster_path, overview, release_date, language, popularity, vote_average } = req.body;
+  try {
+    await pool.execute('INSERT INTO movies (title, poster_path, overview, release_date, language, popularity, vote_average) VALUES (?, ?, ?, ?, ?, ?, ?)', 
+      [title, poster_path, overview || '', release_date, language, popularity, vote_average]);
+    res.status(201).json({ message: 'Movie added successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 // Remove a movie (Admin only)
 exports.removeMovie = async (req, res) => {
   const movieId = req.params.id;
