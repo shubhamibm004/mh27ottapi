@@ -31,13 +31,14 @@ exports.addUser = [
   body('email').isEmail(),
   body('password').isLength({ min: 6 }),
   body('roles').optional().isString(),
+  body('createdByAdmin').optional().isIn(['0', '1']),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { username, email, password, roles = 'User' } = req.body;
+    const { username, email, password, roles = 'User',createdByAdmin = '0'  } = req.body;
     try {
       checkEnvVars('JWT_SECRET', 'EMAIL', 'PASSWORD');
 
@@ -51,8 +52,8 @@ exports.addUser = [
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Insert new user with roles
-      await pool.execute('INSERT INTO users (username, email, password, roles, verified, is_admin) VALUES (?, ?, ?, ?, ?, ?)', [
-        username, email, hashedPassword, roles, 0, roles === 'Admin' ? 1 : 0
+      await pool.execute('INSERT INTO users (username, email, password, roles, verified, is_admin , createdByAdmin) VALUES (?, ?, ?, ?, ?, ? , ?)', [
+        username, email, hashedPassword, roles, 0, roles === 'Admin' ? 1 : 0, createdByAdmin
       ]);
 
       res.status(201).json({ message: 'User added successfully' });
@@ -130,6 +131,7 @@ exports.removeMovie = async (req, res) => {
 
 
 const nodemailer = require('nodemailer');
+const { use } = require('./authRoutes');
 
 // Email verification setup
 const transporter = nodemailer.createTransport({
@@ -177,7 +179,7 @@ exports.signup = [
 
       // Send email verification
       const frontendVerificationLink = `http://localhost:3000/emailverified?token=${verificationToken}`;
-      const verificationLink = `http://localhost:5000/api/verify-email?token=${verificationToken}`;
+     // const verificationLink = `http://localhost:5000/api/verify-email?token=${verificationToken}`;
       await transporter.sendMail({
         from: process.env.EMAIL,
         to: email,
@@ -266,11 +268,12 @@ exports.login = async (req, res) => {
     if (user.length === 0) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
-
+    if(user[0].createdByAdmin !== 1)
+    {
     if (!user[0].verified) {
       return res.status(400).json({ message: 'Please verify your email before logging in' });
     }
-
+  }
     const isMatch = await bcrypt.compare(password, user[0].password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid email or password' });
